@@ -1,0 +1,17 @@
+# all kind of temp files
+*~*
+
+# heavy files
+*.exe
+
+# matlab file
+*.asv
+
+# MacOS generated files #
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+*.DS_Store
+
+src/@settingsEyeSwarm/default.m
