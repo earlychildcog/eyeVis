@@ -13,15 +13,28 @@ listOfConditions = settings.listOfConditions;
 durFrame = settings.durationOfFrame;
 IP = settings.IP;
 
+% in case we plot groups of kids with different colours in same plot
+doGroups = settings.ifColourGroups;
+if doGroups
+    varGroup = settings.varGroup;
+    indexGroup = T.(varGroup);
+    listOfGroups = unique(indexGroup);
+    nGroup = length(listOfGroups);
+end
+
 frameMin = floor(IP(1)/durFrame) + 1;
 frameMax = min([floor(IP(2)/durFrame)  max(T.frame)]);
 
 T = T(T.frame >= IP(1)/durFrame & T.frame <= frameMax, :);
 
 % which colours to use (per group, if any)
-colours = {[1 0.5 0.5] [0 1 1]};
-colours = {[0 1 1] [0 1 1]};
-colours = {[0 1 0]};
+if ~doGroups
+    colours = {[0 1 0]};
+elseif nGroup == 2
+    colours = {[1 0.5 0.5] [0 1 1]};
+else
+    colours = {'r' 'g' 'b' 'k' 'y'};
+end
 
 % dimensions of video stimuli (used in data processing, to invert based on lateralisation)
 dimsOfScreen = settings.dimsOfScreen;
@@ -52,6 +65,9 @@ for c = 1:condN
     u{c} = VideoReader(videoFileIn);
     condition = listOfConditions(c);
     S{c} = T(T.condition == condition, :);
+    if doGroups
+        indexGroupCondition{c} = indexGroup(T.condition == condition);
+    end
 end
 
 
@@ -81,8 +97,15 @@ for frameC = frameMin:frameMax
         hold on
         condition = listOfConditions{c};
         frameInd = S{c}.frame == frameC;
-        gaze = S{c}{frameInd,end-1:end};
-        scatter(gaze(:,1), gaze(:,2),dotSize, '.', 'MarkerEdgeAlpha', 0.5, 'MarkerEdgeColor', 'g');
+        gaze = S{c}{frameInd,["X" "Y"]};
+        if doGroups
+            for g = 1:nGroup
+                thisGroup = indexGroupCondition{c}(frameInd) == listOfGroups(g);
+                scatter(gaze(thisGroup,1), gaze(thisGroup,2),dotSize, '.', 'MarkerEdgeAlpha', 0.5, 'MarkerEdgeColor', colours{g});
+            end
+        else
+            scatter(gaze(:,1), gaze(:,2),dotSize, '.', 'MarkerEdgeAlpha', 0.5, 'MarkerEdgeColor', colours{1});
+        end
         title(sprintf('%s %.0fms',condition, frameC*durFrame), 'FontName','FixedWirdth')
     end
     newFrame = getframe(f);

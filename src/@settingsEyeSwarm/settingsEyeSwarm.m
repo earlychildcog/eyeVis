@@ -9,10 +9,20 @@ properties
     locationOfStimuli       string
     locationOfResults       string
 
+    % plot settings
+    colours
+    ifColourGroups          logical = false                     
+
     % data settings
+
     listOfVariables         string
+    varCondition            string = "condition"
+    varGroup                string = "group"
+
     listOfConditions        string
     listOfVideonames        string                 % order must correspond to listOfConditions order
+    listOfGroups            string
+
     durationOfFrame         single = 33.333333
     dimsOfScreen            single = [1280 1024]
     IP                      single = [0 Inf]
