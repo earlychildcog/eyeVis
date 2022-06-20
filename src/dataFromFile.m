@@ -1,25 +1,27 @@
-function T = dataFromFile(path, listOfVariables, listOfConditions, opts)
+function T = dataFromFile(filepath, settings, opts)
 % reads data from a csv file
 % path: path to the csv file
 % listOfVariables: list of variable names to extract
 arguments
-    path  {mustBeFile}
-    listOfVariables  string = string([])
-    listOfConditions  string = string([])
-    opts {mustBeA(opts,"matlab.io.text.DelimitedTextImportOptions")} = compactImportOptions(path)
+    filepath  {mustBeFile}
+    settings    {mustBeA(settings, "settingsEyeSwarm")}
+    opts {mustBeA(opts,"matlab.io.text.DelimitedTextImportOptions")} = compactImportOptions(filepath)
 end
 
-framedur = 33.3333;
-tMin = 0;
+listOfVariables = settings.listOfVariables;
+listOfConditions = settings.listOfConditions;
+framedur = settings.durationOfFrame;
+tMin = settings.IP(1);
+tMax = settings.IP(2);
 
-T = readtable(path, opts);
+T = readtable(filepath, opts);
 if ~isempty(listOfVariables)
     T = T(:, listOfVariables);
 end
 if ~isempty(listOfConditions)
     T = T(ismember(T.condition, listOfConditions), :);
 end
-T = T(T.time >= tMin, :);
+T = T(T.time >= tMin & T.time <= tMax, :);
 
 T.frame = floor(T.time/framedur) + 1;
 
