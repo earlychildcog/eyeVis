@@ -1,7 +1,11 @@
-function videoFileOut = swarm(T, settings)
+function videoFileOut = swarm(T, settings, opts)
+% Produces "swarm" gaze videos.
 arguments
     T           {mustBeA(T, 'table')}
     settings    {mustBeA(settings, "settingsEyeSwarm")}
+    opts.verbose logical = true
+    opts.dotSize = 40;
+    opts.luminAdj = 0.5;
 end
 
 project = settings.project;
@@ -36,33 +40,38 @@ else
     colours = {'r' 'g' 'b' 'k' 'y'};
 end
 
-% dimensions of video stimuli (used in data processing, to invert based on lateralisation)
-dimsOfScreen = settings.dimsOfScreen;
 
 mkdir(resultFolder)
 
 % adjust luminosity of background frame (current idea is dark background and light swarms)
-luminAdj = 0.5;
+luminAdj = opts.luminAdj;
 
 % how big the dots to be
-dotSize = 40;
+dotSize = opts.dotSize;
 
 % should the pupils leave traces back?
-traceN = 1;
+% traceN = 1;
 
 videoFileOut = sprintf("%s/swarm_%s_%s.avi",resultFolder,project, datestr(datetime, 'yyyymmdd_hhMM'));
 v = VideoWriter(videoFileOut, "Motion JPEG AVI");
 v.FrameRate = double(round(1000/durFrame));
 v.open;
-frameC = 0;
-toDelete = 0;
-time0 = datetime;
-fprintf('Writing to %s...\n', videoFileOut)
 
 
+
+
+if opts.verbose
+    toDelete = 0;
+    time0 = datetime;
+    fprintf('Writing to %s...\n', videoFileOut)
+end
+
+u = cell(condN,1);
+S = cell(condN,1);
+if doGroups, indexGroupCondition = cell(condN,1); end
 for c = 1:condN             
-    videoFileIn = videoFolder + "/" + videos(c);
-    u{c} = VideoReader(videoFileIn);
+    videoFileIn = fullfile(videoFolder, videos(c));
+    u{c} = VideoReader(videoFileIn); %#ok<TNMLP> 
     condition = listOfConditions(c);
     S{c} = T(T.condition == condition, :);
     if doGroups
@@ -70,6 +79,17 @@ for c = 1:condN
     end
 end
 
+% dimensions of screen and those of the video (X Y) --- Assumes all videos have the same dimensions
+dimsOfScreen = settings.dimsOfScreen;
+dimsOfVideo = [u{1}.Width, u{1}.Height];
+
+if dimsOfVideo(1) ~= dimsOfScreen(1)
+    T.X = T.X * dimsOfScreen(1) / dimsOfVideo(1);
+end
+
+if dimsOfVideo(2) ~= dimsOfScreen(2)
+    T.Y = T.Y * dimsOfScreen(2) / dimsOfVideo(2);
+end
 
 f = figure('WindowState','fullscreen','Visible','on');
 pause(1)            % give some time for window to maximise before hiding it
@@ -77,7 +97,7 @@ f.Visible = 'off';
 hold on
 
 fprintf('writing frame ')
-oldgaze = repmat({repmat({[]}, 1, traceN)},1 , 3);
+% oldgaze = repmat({repmat({[]}, 1, traceN)},1 , 3);
 frameBW = cell(condN, 1);
 % video creation loop
 for frameC = frameMin:frameMax
@@ -93,7 +113,7 @@ for frameC = frameMin:frameMax
         end
         frameFull = repmat(frameBW{c},[1 1 3]);
 
-        imshow(frameFull/2);
+        imshow(frameFull*luminAdj);
         hold on
         condition = listOfConditions{c};
         frameInd = S{c}.frame == frameC;
@@ -112,15 +132,19 @@ for frameC = frameMin:frameMax
     v.writeVideo(newFrame);
 
     % print message to command line to show progress
-    fprintf(repmat('\b', 1, toDelete));
-    message = sprintf('%d', frameC);
-    toDelete = length(message);
-    fprintf(message);
+    if opts.verbose
+        fprintf(repmat('\b', 1, toDelete));
+        message = sprintf('%d', frameC);
+        toDelete = length(message);
+        fprintf(message);
+    end
 end
 
 
 
 
-time1 = datetime;
 v.close;
-fprintf('\nvideo created and saved in %.2f seconds\n', seconds(time1 - time0))
+if opts.verbose
+    time1 = datetime;
+    fprintf('\nvideo created and saved in %.2f seconds\n', seconds(time1 - time0))
+end
