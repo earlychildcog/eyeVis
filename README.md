@@ -4,6 +4,7 @@ This matlab package is for visualising gaze eyetracking data.
 
 Currently it includes heatmap plots, and heatmap and swarm videos.
 Can read data from csv files, or folders, or already loaded tables.
+There is a demo script to show an example, but no data to run it with.
 
 To do:
 
